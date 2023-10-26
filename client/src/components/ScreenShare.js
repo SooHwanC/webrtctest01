@@ -17,7 +17,7 @@ const ScreenShare = () => {
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       const videoTrack = stream.getVideoTracks()[0];
 
-      const newSocket = io('http://localhost:3001');
+      const newSocket = io('13.125.232.118:3001');
 
       newSocket.on('connect', () => {
         newSocket.emit('startScreenShare', { peerId: newSocket.id });
