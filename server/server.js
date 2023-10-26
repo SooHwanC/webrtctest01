@@ -1,32 +1,40 @@
-// server.js
+// server/index.js
 
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-
 const app = express();
+const cors = require("cors");
+const http = require('http');
+const socketIo = require('socket.io');
+
+app.use(cors());
+
 const server = http.createServer(app);
-const io = new Server(server);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
-io.on("connection", socket => {
-  socket.on("join room", roomID => {
-    socket.join(roomID);
-    socket.to(roomID).emit("other user", socket.id);
+io.on('connection', (socket) => {
+  console.log('A user connected');
 
-    socket.on("offer", (offer, userID) => {
-      socket.to(userID).emit("offer", offer, socket.id);
-    });
+  socket.on('startScreenShare', (data) => {
+    const { peerId } = data;
+    socket.broadcast.emit('startScreenShare', { peerId });
+  });
 
-    socket.on("answer", (answer, userID) => {
-      socket.to(userID).emit("answer", answer, socket.id);
-    });
+  socket.on('stopScreenShare', (data) => {
+    const { peerId } = data;
+    socket.broadcast.emit('stopScreenShare', { peerId });
+  });
 
-    socket.on("ice-candidate", (candidate, userID) => {
-      socket.to(userID).emit("ice-candidate", { candidate: candidate, id: socket.id });
-    });
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
   });
 });
 
-server.listen(5000, () => {
-  console.log("Server is running on http://localhost:5000");
+
+server.listen(3001, () => {
+  console.log('Server is running on http://localhost:3001');
 });
