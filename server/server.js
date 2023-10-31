@@ -1,13 +1,8 @@
-// server/index.js
-
-const express = require("express");
-const app = express();
-const cors = require("cors");
+const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 
-app.use(cors());
-
+const app = express();
 const server = http.createServer(app);
 const io = require("socket.io")(server, {
   cors: {
@@ -15,26 +10,24 @@ const io = require("socket.io")(server, {
     methods: ["GET", "POST"]
   }
 });
-
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  socket.on('startScreenShare', (data) => {
-    const { peerId } = data;
-    socket.broadcast.emit('startScreenShare', { peerId });
-  });
-
-  socket.on('stopScreenShare', (data) => {
-    const { peerId } = data;
-    socket.broadcast.emit('stopScreenShare', { peerId });
+  socket.on('offer', (data) => {
+    socket.broadcast.emit('new-peer', data);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log('A user disconnected');
   });
+
+  socket.on('remote-stream', (base64data) => {
+    socket.broadcast.emit('new-peer', base64data);
+  });
+
 });
 
-
-server.listen(3001, () => {
-  console.log('Server is running on http://localhost:3001');
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
