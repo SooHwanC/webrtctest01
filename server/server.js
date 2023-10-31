@@ -13,7 +13,10 @@ const options = {
 
 
 
-const server = https.createServer(options, app);
+const server = https.createServer(options, (req, res) => {
+  res.writeHead(200);
+  res.end('Hello, this is an HTTPS server!');
+})
 
 const io = require("socket.io")(server, {
   cors: {

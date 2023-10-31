@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
 const socket = io('https://codebridge.site:5000');
-// const socket = io('https://localhost:5000');
+// const socket = io('https://localhost:3000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
