@@ -7,8 +7,8 @@ const fs = require('fs');
 const app = express();
 // const server = http.createServer(app);
 const options = {
-  key: fs.readFileSync('/etc/ssl/private/selfsigned.key'),
-  cert: fs.readFileSync('/etc/ssl/certs/selfsigned.crt')
+  key: fs.readFileSync('./server/selfsigned.key'),
+  cert: fs.readFileSync('./server/selfsigned.crt')
 };
 
 
