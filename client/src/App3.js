@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-const socket = io('https://43.200.137.185:5000');
+const socket = io('https://codebridge.site:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
