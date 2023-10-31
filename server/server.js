@@ -1,48 +1,41 @@
 const express = require('express');
 const http = require('http');
-const https = require('https');
 const socketIo = require('socket.io');
+const https = require('https');
+const fs = require('fs');
 
 const app = express();
-const server = http.createServer(app);
-
-
-// SSL cert for HTTPS access
+// const server = http.createServer(app);
 const options = {
   key: fs.readFileSync('./private.key'),
   cert: fs.readFileSync('./certificate.crt')
-}
+};
 
-const httpsServer = https.createServer(options, app)
-httpsServer.listen(5000, () => {
-  console.log('listening on port: ' + 5000)
-})
 
-const io = socketIo(httpsServer, {
+
+const server = https.createServer(options, app);
+
+const io = require("socket.io")(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   }
 });
-
 io.on('connection', (socket) => {
   console.log('A user connected');
 
   socket.on('offer', (data) => {
-    socket.broadcast.emit('offer', data);
-  });
-
-  socket.on('answer', (data) => {
-    socket.broadcast.emit('answer', data);
-  });
-
-  socket.on('stop-sharing', () => {
-    socket.broadcast.emit('stop-sharing');
+    socket.broadcast.emit('new-peer', data);
   });
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
+
+  socket.on('remote-stream', (base64data) => {
+    socket.broadcast.emit('new-peer', base64data);
+  });
+
 });
 
 const PORT = process.env.PORT || 5000;

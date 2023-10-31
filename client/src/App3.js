@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
 const socket = io('https://codebridge.site');
+// const socket = io('http://localhost:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
@@ -9,47 +10,45 @@ function App() {
 
     const videoRef = useRef();
 
+    const startSharing = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            videoRef.current.srcObject = stream;
+            setIsSharing(true);
+
+            // WebRTC 연결 설정
+            let peerConnection = new RTCPeerConnection();
+            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+            peerConnection.ontrack = (event) => {
+                setRemoteStream(event.streams[0]);
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            // 상대방에게 offer 전송
+            socket.emit('offer', { offer });
+        } catch (error) {
+            console.error('Error accessing display media:', error);
+            alert('Failed to access display media. Please check your settings.');
+        }
+    };
+
+    const stopSharing = () => {
+        const stream = videoRef.current.srcObject;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+        setIsSharing(false);
+        setRemoteStream(null);
+
+        // WebRTC 연결 종료 후 상대방에게 종료 메시지 전송
+        socket.emit('stop-sharing');
+    };
+
+
     useEffect(() => {
         let peerConnection = null;
-
-        const startSharing = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                videoRef.current.srcObject = stream;
-                setIsSharing(true);
-
-                // WebRTC 연결 설정
-                peerConnection = new RTCPeerConnection();
-                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-                peerConnection.ontrack = (event) => {
-                    setRemoteStream(event.streams[0]);
-                };
-
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                // 상대방에게 offer 전송
-                socket.emit('offer', { offer });
-            } catch (error) {
-                console.error('Error accessing display media:', error);
-                alert('Failed to access display media. Please check your settings.');
-            }
-        };
-
-        const stopSharing = () => {
-            const stream = videoRef.current.srcObject;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-            setIsSharing(false);
-
-            if (peerConnection) {
-                peerConnection.close();
-            }
-
-            // WebRTC 연결 종료 후 상대방에게 종료 메시지 전송
-            socket.emit('stop-sharing');
-        };
 
         // 서버에서 온 offer 처리
         socket.on('offer', async (data) => {
