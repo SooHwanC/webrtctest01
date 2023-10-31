@@ -7,7 +7,7 @@ const fs = require('fs');
 const app = express();
 // const server = http.createServer(app);
 const options = {
-  key: fs.readFileSync('../../key.pem'),
+  key: fs.readFileSync('./key.pem'),
   cert: fs.readFileSync('./certificate.pem')
 };
 
