@@ -7,8 +7,8 @@ const fs = require('fs');
 const app = express();
 // const server = http.createServer(app);
 const options = {
-  key: fs.readFileSync('./key.pem'),
-  cert: fs.readFileSync('./cert.pem'),
+  key: fs.readFileSync('./private.key'),
+  cert: fs.readFileSync('./certificate.crt'),
   passphrase: 'smhrd'
 };
 
@@ -40,6 +40,7 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
