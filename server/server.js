@@ -5,23 +5,26 @@ const https = require('https');
 const fs = require('fs');
 
 const app = express();
-// const server = http.createServer(app);
-const options = {
-  key: fs.readFileSync('./private.key'),
-  cert: fs.readFileSync('./certificate.crt'),
-  passphrase: 'smhrd'
-};
+const server = http.createServer(app);
+// const options = {
+//   key: fs.readFileSync('./private.key'),
+//   cert: fs.readFileSync('./certificate.crt'),
+//   passphrase: 'smhrd'
+// };
 
 
 
-const server = https.createServer(options, app);
+// const server = https.createServer(options, app);
 
-const io = require("socket.io")(server, {
+const io = socketIo(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   }
 });
+
+
+// WebSocket 로직 추가
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -36,7 +39,6 @@ io.on('connection', (socket) => {
   socket.on('remote-stream', (base64data) => {
     socket.broadcast.emit('new-peer', base64data);
   });
-
 });
 
 const PORT = process.env.PORT || 5000;
