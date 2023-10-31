@@ -1,11 +1,24 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
 
-const io = socketIo(server, {
+
+// SSL cert for HTTPS access
+const options = {
+  key: fs.readFileSync('./private.key'),
+  cert: fs.readFileSync('./certificate.crt')
+}
+
+const httpsServer = https.createServer(options, app)
+httpsServer.listen(5000, () => {
+  console.log('listening on port: ' + 5000)
+})
+
+const io = socketIo(httpsServer, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
