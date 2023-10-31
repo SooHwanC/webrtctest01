@@ -1,83 +1,56 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import Peer from 'simple-peer';
 
-const socket = io('https://codebridge.site');
-// const socket = io('http://localhost:5000');
+const socket = io('https://codebridge.site:5000');
+// const socket = io('https://localhost:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
-    const [remoteStream, setRemoteStream] = useState(null);
-
+    const [peers, setPeers] = useState([]);
     const videoRef = useRef();
-
+    useEffect(() => {
+        const peer = new Peer({ initiator: true, trickle: false });
+        peer.on('signal', (data) => {
+            socket.emit('offer', JSON.stringify(data));
+        });
+        peer.on('stream', (stream) => {
+            videoRef.current.srcObject = stream;
+        });
+        socket.on('answer', (data) => {
+            peer.signal(JSON.parse(data));
+        });
+        socket.on('new-peer', (data) => {
+            const newPeer = new Peer({ trickle: false });
+            newPeer.signal(JSON.parse(data));
+            newPeer.on('signal', (offer) => {
+                socket.emit('offer', JSON.stringify(offer));
+            });
+            newPeer.on('stream', (stream) => {
+                setPeers((prevPeers) => [...prevPeers, stream]);
+            });
+        });
+        return () => {
+            peer.destroy();
+        };
+    }, []);
     const startSharing = async () => {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             videoRef.current.srcObject = stream;
             setIsSharing(true);
-
-            // WebRTC 연결 설정
-            let peerConnection = new RTCPeerConnection();
-            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-            peerConnection.ontrack = (event) => {
-                setRemoteStream(event.streams[0]);
-            };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-
-            // 상대방에게 offer 전송
-            socket.emit('offer', { offer });
         } catch (error) {
             console.error('Error accessing display media:', error);
             alert('Failed to access display media. Please check your settings.');
         }
     };
-
     const stopSharing = () => {
         const stream = videoRef.current.srcObject;
         stream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
         setIsSharing(false);
-        setRemoteStream(null);
-
-        // WebRTC 연결 종료 후 상대방에게 종료 메시지 전송
         socket.emit('stop-sharing');
     };
-
-
-    useEffect(() => {
-        let peerConnection = null;
-
-        // 서버에서 온 offer 처리
-        socket.on('offer', async (data) => {
-            const remoteOffer = new RTCSessionDescription(data.offer);
-            await peerConnection.setRemoteDescription(remoteOffer);
-
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-
-            // 상대방에게 answer 전송
-            socket.emit('answer', { answer });
-        });
-
-        // 서버에서 온 answer 처리
-        socket.on('answer', async (data) => {
-            const remoteAnswer = new RTCSessionDescription(data.answer);
-            await peerConnection.setRemoteDescription(remoteAnswer);
-        });
-
-        // 서버에서 화면 공유 중지 메시지 처리
-        socket.on('stop-sharing', () => {
-            stopSharing();
-        });
-
-        return () => {
-            stopSharing();
-        };
-    }, []);
-
     return (
         <div>
             <div>
@@ -95,10 +68,14 @@ function App() {
             </div>
             <div>
                 <h1>Remote Screen</h1>
-                {remoteStream && <video ref={videoRef} autoPlay playsInline srcObject={remoteStream} />}
+                <video ref={videoRef} autoPlay playsInline />
+            </div>
+            <div>
+                {peers.map((peerStream, index) => (
+                    <video key={index} srcObject={peerStream} autoPlay playsInline />
+                ))}
             </div>
         </div>
     );
 }
-
 export default App;
