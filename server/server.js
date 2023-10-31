@@ -3,8 +3,12 @@ const http = require('http');
 const socketIo = require('socket.io');
 const https = require('https');
 const fs = require('fs');
+const cors = require('cors');
 
 const app = express();
+
+app.use(cors());
+
 // const server = http.createServer(app);
 const options = {
   key: fs.readFileSync('./private.key'),
