@@ -15,7 +15,7 @@ const options = {
 
 const server = https.createServer(options, app);
 
-const io = require("socket.io")(httpsServer, {
+const io = require("socket.io")(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
