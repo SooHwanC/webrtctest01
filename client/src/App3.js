@@ -2,49 +2,54 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-const socket = io('https://codebridge.site:5000');
-// const socket = io('https://localhost:3000');
+const socket = io('http://localhost:5000');
+// const socket = io('https://codebridge.site:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
     const [peers, setPeers] = useState([]);
     const videoRef = useRef();
-    useEffect(() => {
-        const peer = new Peer({ initiator: true, trickle: false });
-        peer.on('signal', (data) => {
-            console.log('시그널 데이터 확인', data);
-            socket.emit('offer', JSON.stringify(data));
-        });
-        peer.on('stream', (stream) => {
-            videoRef.current.srcObject = stream;
-        });
-        socket.on('answer', (data) => {
-            peer.signal(JSON.parse(data));
-        });
-        socket.on('new-peer', (data) => {
-            const newPeer = new Peer({ trickle: false });
-            newPeer.signal(JSON.parse(data));
-            newPeer.on('signal', (offer) => {
-                socket.emit('offer', JSON.stringify(offer));
-            });
-            newPeer.on('stream', (stream) => {
-                setPeers((prevPeers) => [...prevPeers, stream]);
-            });
-        });
-        return () => {
-            peer.destroy();
-        };
-    }, []);
+
     const startSharing = async () => {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             videoRef.current.srcObject = stream;
             setIsSharing(true);
+
+            const peer = new Peer({ initiator: true, trickle: false });
+            setupPeerListeners(peer);
+
         } catch (error) {
             console.error('Error accessing display media:', error);
             alert('Failed to access display media. Please check your settings.');
         }
     };
+
+    const setupPeerListeners = (peer) => {
+        peer.on('signal', (data) => {
+            console.log('시그널 데이터 확인', data);
+            socket.emit('offer', JSON.stringify(data));
+        });
+
+        peer.on('stream', (stream) => {
+            videoRef.current.srcObject = stream;
+        });
+
+        socket.on('answer', (data) => {
+            peer.signal(JSON.parse(data));
+        });
+
+        socket.on('new-peer', (data) => {
+            const newPeer = new Peer({ trickle: false });
+            newPeer.signal(JSON.parse(data));
+            setupPeerListeners(newPeer);
+
+            newPeer.on('stream', (stream) => {
+                setPeers((prevPeers) => [...prevPeers, stream]);
+            });
+        });
+    };
+
     const stopSharing = () => {
         const stream = videoRef.current.srcObject;
         stream.getTracks().forEach(track => track.stop());
@@ -52,6 +57,7 @@ function App() {
         setIsSharing(false);
         socket.emit('stop-sharing');
     };
+
     return (
         <div>
             <div>
@@ -79,4 +85,5 @@ function App() {
         </div>
     );
 }
+
 export default App;
