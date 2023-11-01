@@ -28,10 +28,12 @@ const io = require("socket.io")(server, {
     methods: ["GET", "POST"]
   }
 });
+
 io.on('connection', (socket) => {
   console.log('A user connected');
 
   socket.on('offer', (data) => {
+    console.log('노드 오퍼 데이터 확인', data);
     socket.broadcast.emit('new-peer', data);
   });
 

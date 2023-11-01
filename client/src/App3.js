@@ -12,6 +12,7 @@ function App() {
     useEffect(() => {
         const peer = new Peer({ initiator: true, trickle: false });
         peer.on('signal', (data) => {
+            console.log('시그널 데이터 확인', data);
             socket.emit('offer', JSON.stringify(data));
         });
         peer.on('stream', (stream) => {
