@@ -2,28 +2,40 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-const socket = io('http://localhost:5000');
+// const socket = io('http://localhost:5000');
 // const socket = io('https://codebridge.site:5000');
+const socket = io('https://43.200.137.185:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
+    const [sharedStream, setSharedStream] = useState(null);
     const [peers, setPeers] = useState([]);
     const videoRef = useRef();
 
+    console.log('sharedStream 확인', sharedStream);
+
     const startSharing = async () => {
         try {
+            console.log('startSharing 실행');
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             videoRef.current.srcObject = stream;
+            console.log('스트림 정보', stream);
             setIsSharing(true);
 
-            const peer = new Peer({ initiator: true, trickle: false });
-            setupPeerListeners(peer);
-
+            // 서버로 스트림 전송
+            socket.emit('share-screen', stream);
+            console.log('startSharing 실행2');
         } catch (error) {
             console.error('Error accessing display media:', error);
             alert('Failed to access display media. Please check your settings.');
         }
     };
+
+    // 서버에서 화면 전송 받기
+    socket.on('shared-screen', (stream) => {
+        console.log('shared-screen 실행');
+        setSharedStream(stream);
+    });
 
     const setupPeerListeners = (peer) => {
         peer.on('signal', (data) => {
