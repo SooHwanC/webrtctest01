@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
-// const socket = io('http://localhost:5000');
+const socket = io('http://localhost:5000');
 // const socket = io('https://codebridge.site:5000');
-const socket = io('https://43.200.137.185:5000');
+// const socket = io('https://43.200.137.185:5000');
 
 function App() {
     const [isSharing, setIsSharing] = useState(false);
@@ -17,7 +17,11 @@ function App() {
     const startSharing = async () => {
         try {
             console.log('startSharing 실행');
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                audio: true,
+                video: true
+            });
+            
             videoRef.current.srcObject = stream;
             console.log('스트림 정보', stream);
             setIsSharing(true);
